@@ -4,7 +4,7 @@ Proyecto académico de **Práctica Calificada 2, Tipo F**, orientado a informar 
 
 ## Enlaces
 
-- [Jira MFP](https://dbravoo.atlassian.net/jira/software/projects/MFP/boards/37/backlog)
+- [Jira MFP](https://marea-fresca-dansan.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog)
 - [Demostración publicada](https://marea-fresca-pfc3.vercel.app)
 
 ## Alcance implementado
