@@ -3,12 +3,12 @@
 Caso: **Terminal Pesquero de Chorrillos**. Corte: 21 de noviembre de 2026 (UTC-5).
 
 ## Jira — pregunta 1
-- Backlog: https://dbravoo.atlassian.net/jira/software/projects/MFP/boards/37/backlog
-- Épicas: MFP-1, MFP-2, MFP-3, MFP-4
-- Historias: MFP-5 a MFP-20; todas vinculadas a épica con criterios Dado/Cuando/Entonces, MoSCoW y Story point estimate.
+- Backlog: https://marea-fresca-dansan.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog
+- Épicas recreadas: SCRUM-5, SCRUM-6, SCRUM-7, SCRUM-8 (origen antiguo MFP-1 a MFP-4)
+- Historias recreadas: SCRUM-9 a SCRUM-24, vinculadas a épica con criterios Dado/Cuando/Entonces, MoSCoW, estimaciones Fibonacci y asignación al usuario responsable. Los 16 puntos antiguos suman ahora 61 story points.
 
 ## Scrum — pregunta 2
-- Tablero 37: 4 sprints FUTUROS (no ejecutados): 23/11–27/11, 30/11–04/12, 07/12–11/12 y 14/12–18/12 de 2026.
+- Tablero 1 del sitio propio: 4 sprints FUTUROS (no ejecutados): 23/11–27/11, 30/11–04/12, 07/12–11/12 y 14/12–18/12 de 2026.
 - Cada sprint tiene 4 historias. Totales: 15, 13, 14, 16 SP = **58 SP**.
 - Burndown, velocidad y Kanban de 4 etapas pertenecen a una **SIMULACIÓN ACADÉMICA**; no implican historias cerradas en Jira.
 - El tablero real actualmente muestra tres columnas: **Por hacer / En curso / Listo**, sin límite WIP. Para cumplir exactamente la rúbrica, el usuario deberá agregar la columna **En revisión** y límites WIP en la configuración del tablero, si la edición de su proyecto lo permite.
@@ -29,3 +29,16 @@ Caso: **Terminal Pesquero de Chorrillos**. Corte: 21 de noviembre de 2026 (UTC-5
 
 ## Capturas
 El navegador automatizado de este entorno recibió `ERR_BLOCKED_BY_ADMINISTRATOR` al abrir Jira, GitHub y Vercel. Por ello, tomar capturas en la propia sesión web y adjuntarlas al informe. Nunca representar capturas locales como capturas de servicios remotos.
+
+
+## Migración a Jira independiente (21/11/2026)
+- **Sitio vigente:** https://marea-fresca-dansan.atlassian.net
+- **Proyecto vigente:** SCRUM (Jira asignó esta clave al proyecto llamado Marea Fresca - PC2, con clave MFP).
+- **Backlog:** https://marea-fresca-dansan.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog
+- **Épicas:** SCRUM-5 a SCRUM-8; **historias:** SCRUM-9 a SCRUM-24.
+- **Estados actuales de las 16 historias:** 8 finalizadas, 6 en curso, 2 por hacer.
+- **Asignación:** todas las 16 historias al propietario del proyecto.
+- **Estimación total:** 61 story points; sprints: 18 / 15 / 13 / 15 puntos.
+- **Sprints:** MFP Sprint 1 id=1; Sprint 2 id=3; Sprint 3 id=4; Sprint 4 id=5. Todos futuros. Sprint 0 id=2 y cuatro incidencias de ejemplo existían previamente y no pertenecen al alcance del proyecto.
+- **Limitación:** es reconstrucción funcional; Jira no transfirió los identificadores, el historial de cambios ni los eventos del proyecto anterior.
+- **Sitio anterior:** dbravoo.atlassian.net, temporalmente fuera de los permisos otorgados al conector, por tanto no se ha eliminado.
