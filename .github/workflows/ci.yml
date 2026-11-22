@@ -35,7 +35,7 @@ jobs:
       - name: Semgrep
         run: |
           python -m pip install --user 'semgrep==1.104.0'
-          python -m semgrep scan --config=p/javascript --error public api
+          semgrep scan --config=p/javascript --error public api
   secrets:
     runs-on: ubuntu-latest
     steps:
