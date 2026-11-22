@@ -1,0 +1,176 @@
+name: CI · Marea Fresca — Quality & DevSecOps
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, test, 'feature/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mfp-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detectar-cambios:
+    name: Detectar cambios
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.scope.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: scope
+        run: |
+          echo "app=true" >> "$GITHUB_OUTPUT"
+          echo "Scope: proyecto web/API, con validación total para no omitir seguridad." >> "$GITHUB_STEP_SUMMARY"
+
+  archivos-grandes:
+    name: Archivos grandes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detectar archivos superiores a 5 MiB
+        run: |
+          count=$(find . -path './.git' -prune -o -type f -size +5M -print | tee /tmp/large-files.txt | wc -l)
+          if [ "$count" -gt 0 ]; then
+            echo "::error::Se detectaron $count archivos grandes."
+            cat /tmp/large-files.txt
+            exit 1
+          fi
+          echo "Sin archivos superiores a 5 MiB." >> "$GITHUB_STEP_SUMMARY"
+
+  convenciones-pr:
+    name: Convenciones de la PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validar título, Jira y descripción
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! [[ "$PR_TITLE" =~ ^(MFP:|feat\(|fix\(|docs\(|test\(|ci\() ]]; then
+            echo "::error::El título debe empezar por MFP: o una etiqueta convencional."
+            exit 1
+          fi
+          if [[ -z "$PR_BODY" ]] || [[ "$PR_BODY" != *"MFP"* ]]; then
+            echo "::error::La PR debe explicar el alcance y referenciar Jira MFP."
+            exit 1
+          fi
+
+  web:
+    name: Web · lint, tests y build
+    needs: detectar-cambios
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Comprobar sintaxis
+        run: npm run lint
+      - name: Pruebas automatizadas
+        run: |
+          mkdir -p reports
+          npm test | tee reports/tests.txt
+      - name: Build
+        run: npm run build
+      - name: Publicar resultados de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-pruebas-${{ github.run_number }}
+          path: reports/tests.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  dependencias:
+    name: Dependencias · npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Analizar vulnerabilidades altas
+        run: |
+          mkdir -p reports
+          npm audit --audit-level=high --json > reports/npm-audit.json
+      - name: Evidencia de dependencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-dependencias-${{ github.run_number }}
+          path: reports/npm-audit.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  seguridad-estatica:
+    name: SAST · Semgrep JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar Semgrep (versión verificada)
+        run: python -m pip install 'semgrep==1.104.0'
+      - name: Examinar código frontend y API
+        run: |
+          mkdir -p reports
+          semgrep scan --config=p/javascript --error --json public api > reports/semgrep.json
+      - name: Evidencia SAST
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-sast-${{ github.run_number }}
+          path: reports/semgrep.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  secretos:
+    name: Búsqueda de secretos · Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ci:
+    name: CI · Quality Gate
+    if: always()
+    needs: [detectar-cambios, archivos-grandes, convenciones-pr, web, dependencias, seguridad-estatica, secretos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluar jobs requeridos
+        env:
+          DEP: ${{ needs.dependencias.result }}
+          LARGE: ${{ needs.archivos-grandes.result }}
+          WEB: ${{ needs.web.result }}
+          SAST: ${{ needs.seguridad-estatica.result }}
+          SECRETS: ${{ needs.secretos.result }}
+          SCOPE: ${{ needs.detectar-cambios.result }}
+          PR: ${{ needs.convenciones-pr.result }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          for value in "$DEP" "$LARGE" "$WEB" "$SAST" "$SECRETS" "$SCOPE"; do
+            if [[ "$value" != "success" ]]; then
+              echo "::error::Una comprobación obligatoria falló o fue omitida: $value"
+              exit 1
+            fi
+          done
+          if [[ "$EVENT_NAME" == "pull_request" && "$PR" != "success" ]]; then
+            echo "::error::Las convenciones de PR fallaron."
+            exit 1
+          fi
+          echo "## CI aprobado · Marea Fresca" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build, pruebas, auditoría, Semgrep, secretos y archivos grandes aprobados." >> "$GITHUB_STEP_SUMMARY"
