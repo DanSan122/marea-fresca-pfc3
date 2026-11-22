@@ -38,7 +38,9 @@ alter table public.catch_listings enable row level security;
 -- Limitar expresamente lo que la Data API puede hacer:
 revoke all on table public.profiles from anon, authenticated;
 revoke all on table public.catch_listings from anon, authenticated;
-grant select, insert, update on table public.profiles to authenticated;
+grant select, insert on table public.profiles to authenticated;
+grant update (display_name) on table public.profiles to authenticated;
+-- El rol solo puede ser asignado por un administrador desde el servidor.
 grant select on table public.catch_listings to anon, authenticated;
 grant insert, update, delete on table public.catch_listings to authenticated;
 
@@ -48,7 +50,7 @@ create policy profiles_select_self on public.profiles
 
 drop policy if exists profiles_insert_self on public.profiles;
 create policy profiles_insert_self on public.profiles
-  for insert to authenticated with check ((select auth.uid()) = id);
+  for insert to authenticated with check ((select auth.uid()) = id and role = 'comprador');
 
 drop policy if exists profiles_update_self on public.profiles;
 create policy profiles_update_self on public.profiles
@@ -90,5 +92,7 @@ create policy listings_fisher_delete on public.catch_listings
 comment on table public.catch_listings is
   'Registro de oferta/arribo pesquero. No cargar datos reales sin consentimiento.';
 
--- Nota: El rol pescador es autodeclarado en este MVP académico.
--- En un sistema real se requeriría verificación de la identidad del pescador y roles asignados por un administrador.
+-- Para habilitar un pescador, el administrador verifica la identidad y cambia
+-- el rol usando el SQL Editor autenticado, NUNCA desde el frontend.
+-- update public.profiles set role = 'pescador' where id = '<uuid-autorizado>';
+-- El cliente solo puede actualizar display_name; no puede otorgarse permisos.
